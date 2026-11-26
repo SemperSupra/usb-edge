@@ -1,0 +1,46 @@
+{
+  "schema": "usb-product/adoption-receipt/v1",
+  "origin": "SemperSupra/agent-dispatch",
+  "origin_commit": "39406799f227b610273b24071c3493ac00f98f9f",
+  "prior_run": 45773242728,
+  "prior_artifact": {
+    "id": 15094349188,
+    "expires": "2026-12-03T07:10:05Z"
+  },
+  "destination": "SemperSupra/usb-edge",
+  "scope": "exact five-file read-only inventory/package source; no exporter/HIL",
+  "license_status": "Origin has no LICENSE/COPYING/NOTICE in pinned tree. Same-organization migration authorized; no new license or external distribution authorization.",
+  "files": [
+    {
+      "origin_path": "experiments/pi-usb-fabric-r03/edge-inventory/README.md",
+      "destination_path": "inventory/README.md",
+      "blob": "46c2fa548675da120fd535367ce4aa2b50b3b400",
+      "mode": "100644"
+    },
+    {
+      "origin_path": "experiments/pi-usb-fabric-r03/edge-inventory/build-deb.sh",
+      "destination_path": "inventory/build-deb.sh",
+      "blob": "1265ec4dfedac26ba5560e4462d46b7d29e5979d",
+      "mode": "100755"
+    },
+    {
+      "origin_path": "experiments/pi-usb-fabric-r03/edge-inventory/go.mod",
+      "destination_path": "inventory/go.mod",
+      "blob": "4d98f3f1b540727e79325d6a6a702f07951b371a",
+      "mode": "100644"
+    },
+    {
+      "origin_path": "experiments/pi-usb-fabric-r03/edge-inventory/main.go",
+      "destination_path": "inventory/main.go",
+      "blob": "e81e3c35b2b0049be87f8c3b670199577a440379",
+      "mode": "100644"
+    },
+    {
+      "origin_path": "experiments/pi-usb-fabric-r03/edge-inventory/main_test.go",
+      "destination_path": "inventory/main_test.go",
+      "blob": "2102829da0cd281a3b9294febf0b390e5b2099b4",
+      "mode": "100644"
+    }
+  ],
+  "qualification": "PENDING_DESTINATION_RUN"
+}
