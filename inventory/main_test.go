@@ -14,12 +14,13 @@ func fixture(t *testing.T)string{
  dev:=filepath.Join(root,"devices","usb1","1-2")
  driver:=filepath.Join(root,"bus","usb","drivers","usb")
  for _,p:=range []string{dir,dev,driver}{if err:=os.MkdirAll(p,0700);err!=nil{t.Fatal(err)}}
- for k,v:=range map[string]string{"idVendor":"1209\n","idProduct":"0001\n","bDeviceClass":"00\n","authorized":"1\n","serial":"must-never-appear","manufacturer":"private-label"}{
+ for k,v:=range map[string]string{"idVendor":"1209\n","idProduct":"0001\n","bDeviceClass":"00\n","authorized":"1\n","bConfigurationValue":"1\n","bNumInterfaces":"1\n","serial":"must-never-appear","manufacturer":"private-label"}{
   if err:=os.WriteFile(filepath.Join(dev,k),[]byte(v),0600);err!=nil{t.Fatal(err)}
  }
  if err:=os.Symlink(dev,filepath.Join(dir,"1-2"));err!=nil{t.Fatal(err)}
  if err:=os.Symlink(driver,filepath.Join(dev,"driver"));err!=nil{t.Fatal(err)}
- for _,n:=range []string{"usb1","1-2:1.0"}{if err:=os.Mkdir(filepath.Join(dir,n),0700);err!=nil{t.Fatal(err)}}
+ if err:=os.Mkdir(filepath.Join(dir,"usb1"),0700);err!=nil{t.Fatal(err)}
+ addInterface(t,root,"1-2:1.0","00","0","usbhid")
  return root
 }
 func TestInventoryObservedNotAuthority(t *testing.T){

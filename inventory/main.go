@@ -27,6 +27,8 @@ type Device struct{
  Driver string `json:"device_driver,omitempty"`
  Authorized string `json:"authorized,omitempty"`
  Observation string `json:"observation"`
+ Interfaces []Interface `json:"interfaces"`
+ InterfaceObservation string `json:"interface_observation"`
 }
 type Inventory struct{
  Schema string `json:"schema"`
@@ -60,10 +62,11 @@ func inventory(root string)(Inventory,error){
  entries,err:=os.ReadDir(dir)
  if err!=nil{return out,err}
  if len(entries)>2048{return out,errors.New("USB inventory entry budget exceeded")}
+ interfaceEntries:=groupInterfaceEntries(entries)
  for _,e:=range entries{
   id:=e.Name()
   if len(id)>64||!busID.MatchString(id){continue}
-  d:=Device{BusID:id,Observation:"OBSERVED_NOT_ENROLLED"}
+  d:=Device{BusID:id,Observation:"OBSERVED_NOT_ENROLLED",Interfaces:[]Interface{},InterfaceObservation:"PARTIAL"}
   target,err:=filepath.EvalSymlinks(filepath.Join(dir,id))
   if err!=nil||!contained(canonical,target){
    d.Observation="UNKNOWN_FOREIGN_OR_DISAPPEARED"
@@ -79,6 +82,8 @@ func inventory(root string)(Inventory,error){
   if a=="0"||a=="1"{d.Authorized=a}
   if p,e:=filepath.EvalSymlinks(filepath.Join(target,"driver"));e==nil&&contained(canonical,p)&&driverName.MatchString(filepath.Base(p)){d.Driver=filepath.Base(p)}
   if d.Vendor==""||d.Product==""||d.Class==""||d.Authorized==""{d.Observation="PARTIAL_NOT_ENROLLED";out.Status="PARTIAL"}
+  d.Interfaces,d.InterfaceObservation=observeInterfaces(canonical,dir,target,id,interfaceEntries[id])
+  if d.InterfaceObservation!="COMPLETE_OBSERVATION_NOT_RESTORE_AUTHORITY"{out.Status="PARTIAL"}
   out.Devices=append(out.Devices,d)
  }
  return out,nil

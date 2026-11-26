@@ -1,7 +1,7 @@
-name: USB Edge native ARM64 package reproducibility and lifecycle
+name: USB Edge native ARM64 interface inventory and package lifecycle
 on:
   push:
-    branches: [feature/issue-3-adopt-inventory]
+    branches: [feature/issue-5-interface-inventory]
 permissions:
   contents: read
 concurrency:
@@ -26,7 +26,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = 7ef44eda1bf8429ba497eb36afc835a615762fb9
+          test "$(git rev-parse HEAD^)" = eeade671149f1680ccf493052f0d405cf069f5de
           test "$(uname -m)" = aarch64
           cd inventory
           go version
@@ -38,7 +38,7 @@ jobs:
           mkdir -p "$out/a" "$out/b"
           bash build-deb.sh "$out/a"
           bash build-deb.sh "$out/b"
-          name="usb-edge-inventory_0.0.1_arm64.deb"
+          name="usb-edge-inventory_0.0.2_arm64.deb"
           pkg="$out/a/$name"
           cmp "$pkg" "$out/b/$name"
           echo EDGE_PACKAGE_TWO_BUILD_BYTES_EQUAL=PASS
