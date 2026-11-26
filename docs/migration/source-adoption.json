@@ -1,0 +1,27 @@
+{
+  "schema": "usb-product/source-adoption-plan/v1",
+  "destination": "SemperSupra/usb-edge",
+  "status": "PROPOSED_NOT_IMPORTED",
+  "source_authority_transferred": false,
+  "publication": "PUBLIC_SAFE_REVIEW_REQUIRED",
+  "candidates": [
+    {
+      "role": "edge-inventory-package-candidate",
+      "repository": "SemperSupra/agent-dispatch",
+      "revision": "39406799f227b610273b24071c3493ac00f98f9f",
+      "qualification_run": 45773242728,
+      "scope": "Native ARM64 reproducible same-run package and isolated dpkg lifecycle, no downstream device observed.",
+      "paths": [
+        "experiments/pi-usb-fabric-r03/edge-inventory/"
+      ]
+    }
+  ],
+  "acceptance": [
+    "Exact path/blob/dependency inventory with licensing and provenance reviewed",
+    "No private source/metadata or legacy workflow subtree",
+    "Product-native build and independent profile regression, negative evidence retained",
+    "Bounded runner cost and cleanup receipt",
+    "Verified source-owner handoff, redirects and rollback"
+  ],
+  "next": "Review exact five-file inventory/package source and licensing; preserve prior ARM64 evidence, package hash and retention; import only reviewed source. Rebuild in product-native bounded ARM64 workflow before advancing exporter lifecycle."
+}
