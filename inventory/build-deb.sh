@@ -18,7 +18,7 @@ CGO_ENABLED=0 go build -trimpath -o "$stage/usr/bin/usb-edge-inventory" .
 install -m 0644 README.md "$stage/usr/share/doc/usb-edge-inventory/README.md"
 cat >"$stage/DEBIAN/control" <<EOF
 Package: usb-edge-inventory
-Version: 0.0.1
+Version: 0.0.2
 Architecture: $arch
 Maintainer: USB Edge contributors
 Section: utils
@@ -26,4 +26,4 @@ Priority: optional
 Description: Read-only USB Edge inventory, no device admission or export
 EOF
 find "$stage" -exec touch -h -d "@$SOURCE_DATE_EPOCH" {} +
-dpkg-deb --root-owner-group --build "$stage" "$out/usb-edge-inventory_0.0.1_$arch.deb"
+dpkg-deb --root-owner-group --build "$stage" "$out/usb-edge-inventory_0.0.2_$arch.deb"
