@@ -28,11 +28,12 @@ jobs:
           GOWORK: 'off'
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = 0dc434bb69cd6efb00f98ba504888981d026a4a6
+          test "$(git merge-base 0dc434bb69cd6efb00f98ba504888981d026a4a6 HEAD)" = 0dc434bb69cd6efb00f98ba504888981d026a4a6
           git diff --exit-code 0dc434bb69cd6efb00f98ba504888981d026a4a6 HEAD -- inventory
           test "$(git diff --name-only 0dc434bb69cd6efb00f98ba504888981d026a4a6 HEAD)" = .github/workflows/edge-inventory.yml
           test "$(uname -m)" = aarch64
-          cd inventory
+          git worktree add --detach "$RUNNER_TEMP/edge-exact-source" 0dc434bb69cd6efb00f98ba504888981d026a4a6
+          cd "$RUNNER_TEMP/edge-exact-source/inventory"
           go version
           go test -race -count=10 -timeout=90s -v ./...
           go vet ./...
@@ -46,6 +47,9 @@ jobs:
           pkg="$out/a/$name"
           cmp "$pkg" "$out/b/$name"
           echo EDGE_PACKAGE_TWO_BUILD_BYTES_EQUAL=PASS
+          sha256sum "$pkg"
+          dpkg-deb -x "$pkg" "$out/inspect"
+          go version -m "$out/inspect/usr/bin/usb-edge-inventory"
           test "$(sha256sum "$pkg" | cut -d " " -f1)" = c15254cc08534cbd01f04c2c8bf6aaedbed7120e845652100cd70797b8392018
           test "$(dpkg-deb -f "$pkg" Architecture)" = arm64
           test "$(stat -c %s "$pkg")" -le 8388608
