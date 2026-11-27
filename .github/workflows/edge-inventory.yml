@@ -1,21 +1,27 @@
 name: USB Edge native ARM64 interface inventory and package lifecycle
 on:
   push:
-    branches: [feature/issue-5-interface-inventory]
+    branches: [main]
+    paths: ['inventory/**', '.github/workflows/edge-inventory.yml']
+  pull_request:
+    paths: ['inventory/**', '.github/workflows/edge-inventory.yml']
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: usb-edge-arm64-inventory-20261126
+  group: usb-edge-arm64-inventory-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   native-arm64:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
-          fetch-depth: 2
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
       - name: Native tests and isolated dpkg lifecycle
         shell: bash
         env:
@@ -25,8 +31,10 @@ jobs:
           GOWORK: 'off'
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = eeade671149f1680ccf493052f0d405cf069f5de
+          source="$(git rev-parse HEAD)"
+          test "$source" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          test -d .git
+          test -z "$(git status --porcelain)"
           test "$(uname -m)" = aarch64
           cd inventory
           go version
@@ -42,6 +50,11 @@ jobs:
           pkg="$out/a/$name"
           cmp "$pkg" "$out/b/$name"
           echo EDGE_PACKAGE_TWO_BUILD_BYTES_EQUAL=PASS
+          sha256sum "$pkg"
+          dpkg-deb -x "$pkg" "$out/inspect"
+          go version -m "$out/inspect/usr/bin/usb-edge-inventory" | tee "$out/build-metadata.txt"
+          grep -F "vcs.revision=$source" "$out/build-metadata.txt"
+          grep -F "vcs.modified=false" "$out/build-metadata.txt"
           test "$(dpkg-deb -f "$pkg" Architecture)" = arm64
           test "$(stat -c %s "$pkg")" -le 8388608
           installroot="$out/root"
@@ -58,9 +71,11 @@ jobs:
           echo EDGE_ISOLATED_DPKG_INSTALL_REINSTALL_PURGE=PASS
           mkdir -p "$RUNNER_TEMP/usb-edge-release"
           cp "$pkg" "$RUNNER_TEMP/usb-edge-release/"
-          (cd "$RUNNER_TEMP/usb-edge-release"; sha256sum "$name" > SHA256SUMS; printf 'source=%s\nrun=%s\narchitecture=arm64\nscope=qualification-not-release\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" > provenance.txt; cat SHA256SUMS)
+          (cd "$RUNNER_TEMP/usb-edge-release"; sha256sum "$name" > SHA256SUMS; printf 'source=%s\nrun=%s\narchitecture=arm64\nscope=qualification-not-release\n' "$source" "$GITHUB_RUN_ID" > provenance.txt; cat SHA256SUMS)
+          cp "$out/build-metadata.txt" "$RUNNER_TEMP/usb-edge-release/"
+          test -z "$(git status --porcelain)"
           echo USBIP_EXPORTER_AND_PHYSICAL_PI_HIL=NOT_TESTED
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: usb-edge-arm64-qualified-package
           path: ${{ runner.temp }}/usb-edge-release/
