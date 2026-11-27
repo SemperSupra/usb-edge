@@ -1,7 +1,8 @@
 name: USB Edge native ARM64 interface inventory and package lifecycle
 on:
-  push:
+  pull_request:
     branches: [feature/issue-5-interface-inventory]
+    types: [opened, synchronize]
 permissions:
   contents: read
 concurrency:
@@ -9,13 +10,15 @@ concurrency:
   cancel-in-progress: false
 jobs:
   native-arm64:
+    if: ${{ github.event.pull_request.head.ref == 'fix/edge-arm64-node24' && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
-          fetch-depth: 2
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
       - name: Native tests and isolated dpkg lifecycle
         shell: bash
         env:
@@ -25,8 +28,9 @@ jobs:
           GOWORK: 'off'
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git rev-parse HEAD^)" = eeade671149f1680ccf493052f0d405cf069f5de
+          test "$(git rev-parse HEAD^)" = 0dc434bb69cd6efb00f98ba504888981d026a4a6
+          git diff --exit-code 0dc434bb69cd6efb00f98ba504888981d026a4a6 HEAD -- inventory
+          test "$(git diff --name-only 0dc434bb69cd6efb00f98ba504888981d026a4a6 HEAD)" = .github/workflows/edge-inventory.yml
           test "$(uname -m)" = aarch64
           cd inventory
           go version
@@ -34,7 +38,7 @@ jobs:
           go vet ./...
           out="$(mktemp -d "$RUNNER_TEMP/usb-edge-XXXXXX")"
           trap 'sudo -n rm -rf -- "$out"' EXIT
-          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct 0dc434bb69cd6efb00f98ba504888981d026a4a6)"
           mkdir -p "$out/a" "$out/b"
           bash build-deb.sh "$out/a"
           bash build-deb.sh "$out/b"
@@ -42,6 +46,7 @@ jobs:
           pkg="$out/a/$name"
           cmp "$pkg" "$out/b/$name"
           echo EDGE_PACKAGE_TWO_BUILD_BYTES_EQUAL=PASS
+          test "$(sha256sum "$pkg" | cut -d " " -f1)" = c15254cc08534cbd01f04c2c8bf6aaedbed7120e845652100cd70797b8392018
           test "$(dpkg-deb -f "$pkg" Architecture)" = arm64
           test "$(stat -c %s "$pkg")" -le 8388608
           installroot="$out/root"
@@ -58,9 +63,9 @@ jobs:
           echo EDGE_ISOLATED_DPKG_INSTALL_REINSTALL_PURGE=PASS
           mkdir -p "$RUNNER_TEMP/usb-edge-release"
           cp "$pkg" "$RUNNER_TEMP/usb-edge-release/"
-          (cd "$RUNNER_TEMP/usb-edge-release"; sha256sum "$name" > SHA256SUMS; printf 'source=%s\nrun=%s\narchitecture=arm64\nscope=qualification-not-release\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" > provenance.txt; cat SHA256SUMS)
+          (cd "$RUNNER_TEMP/usb-edge-release"; sha256sum "$name" > SHA256SUMS; printf 'source=%s\nrun=%s\narchitecture=arm64\nscope=qualification-not-release\n' '0dc434bb69cd6efb00f98ba504888981d026a4a6' "$GITHUB_RUN_ID" > provenance.txt; cat SHA256SUMS)
           echo USBIP_EXPORTER_AND_PHYSICAL_PI_HIL=NOT_TESTED
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: usb-edge-arm64-qualified-package
           path: ${{ runner.temp }}/usb-edge-release/
